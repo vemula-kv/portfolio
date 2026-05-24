@@ -1,502 +1,338 @@
-// =============================================================================
-// Theme Management
-// =============================================================================
-const themeToggle = document.getElementById('themeToggle');
-const html = document.documentElement;
+(function () {
+    const h = React.createElement;
+    const { useEffect, useState } = React;
+    const resumeFile = "VINOD%20KUMAR%20VEMULA%20(6).pdf";
 
-// Load saved theme or default to light
-const savedTheme = localStorage.getItem('theme') || 'light';
-html.setAttribute('data-theme', savedTheme);
-updateThemeIcon(savedTheme);
-
-// Theme toggle event
-themeToggle.addEventListener('click', () => {
-    const currentTheme = html.getAttribute('data-theme');
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    
-    html.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    updateThemeIcon(newTheme);
-});
-
-function updateThemeIcon(theme) {
-    const icon = themeToggle.querySelector('i');
-    if (theme === 'dark') {
-        icon.classList.remove('fa-moon');
-        icon.classList.add('fa-sun');
-    } else {
-        icon.classList.remove('fa-sun');
-        icon.classList.add('fa-moon');
-    }
-}
-
-// =============================================================================
-// Navigation
-// =============================================================================
-const navbar = document.getElementById('navbar');
-const navLinks = document.querySelectorAll('.nav-link');
-const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-const navMenu = document.getElementById('navMenu');
-
-// Navbar scroll effect
-window.addEventListener('scroll', () => {
-    if (window.scrollY > 100) {
-        navbar.classList.add('scrolled');
-    } else {
-        navbar.classList.remove('scrolled');
-    }
-});
-
-// Mobile menu toggle
-mobileMenuToggle.addEventListener('click', () => {
-    navMenu.classList.toggle('active');
-    const icon = mobileMenuToggle.querySelector('i');
-    if (navMenu.classList.contains('active')) {
-        icon.classList.remove('fa-bars');
-        icon.classList.add('fa-times');
-    } else {
-        icon.classList.remove('fa-times');
-        icon.classList.add('fa-bars');
-    }
-});
-
-// Close mobile menu when clicking outside
-document.addEventListener('click', (e) => {
-    if (!navMenu.contains(e.target) && !mobileMenuToggle.contains(e.target)) {
-        navMenu.classList.remove('active');
-        const icon = mobileMenuToggle.querySelector('i');
-        icon.classList.remove('fa-times');
-        icon.classList.add('fa-bars');
-    }
-});
-
-// Smooth scrolling for navigation links
-navLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const targetId = link.getAttribute('href');
-        const targetSection = document.querySelector(targetId);
-        
-        if (targetSection) {
-            // Close mobile menu if open
-            navMenu.classList.remove('active');
-            const icon = mobileMenuToggle.querySelector('i');
-            icon.classList.remove('fa-times');
-            icon.classList.add('fa-bars');
-            
-            // Smooth scroll to section
-            const navbarHeight = navbar.offsetHeight;
-            const targetPosition = targetSection.offsetTop - navbarHeight;
-            
-            window.scrollTo({
-                top: targetPosition,
-                behavior: 'smooth'
-            });
-        }
-    });
-});
-
-// Active navigation link on scroll
-const sections = document.querySelectorAll('section[id]');
-
-function updateActiveNavLink() {
-    const scrollPosition = window.scrollY + navbar.offsetHeight + 100;
-    
-    sections.forEach(section => {
-        const sectionTop = section.offsetTop;
-        const sectionHeight = section.offsetHeight;
-        const sectionId = section.getAttribute('id');
-        
-        if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
-            navLinks.forEach(link => {
-                link.classList.remove('active');
-                if (link.getAttribute('href') === `#${sectionId}`) {
-                    link.classList.add('active');
-                }
-            });
-        }
-    });
-}
-
-window.addEventListener('scroll', updateActiveNavLink);
-
-// =============================================================================
-// Back to Top Button
-// =============================================================================
-const backToTopButton = document.getElementById('backToTop');
-
-window.addEventListener('scroll', () => {
-    if (window.scrollY > 500) {
-        backToTopButton.classList.add('visible');
-    } else {
-        backToTopButton.classList.remove('visible');
-    }
-});
-
-backToTopButton.addEventListener('click', () => {
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-    });
-});
-
-// =============================================================================
-// Contact Form Handling with Formspree
-// =============================================================================
-const contactForm = document.getElementById('contactForm');
-const submitBtn = document.getElementById('submitBtn');
-const formStatus = document.getElementById('formStatus');
-
-contactForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    // Disable submit button and show loading state
-    submitBtn.disabled = true;
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-    
-    // Create FormData object
-    const formData = new FormData(contactForm);
-    
-    // Send form data to Formspree
-    fetch('https://formspree.io/f/mwvpdgpv', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => {
-        if (response.ok) {
-            // Success
-            formStatus.style.display = 'block';
-            formStatus.style.backgroundColor = '#dcfce7';
-            formStatus.style.color = '#166534';
-            formStatus.style.borderLeft = '4px solid #10b981';
-            formStatus.innerHTML = '<strong>✓ Success!</strong> Thank you for your message. I\'ll get back to you soon!';
-            
-            showNotification('Message sent successfully!', 'success');
-            contactForm.reset();
-            
-            // Reset button
-            setTimeout(() => {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-                formStatus.style.display = 'none';
-            }, 3000);
-        } else {
-            throw new Error('Form submission failed');
-        }
-    })
-    .catch(error => {
-        // Error
-        console.error('Error:', error);
-        formStatus.style.display = 'block';
-        formStatus.style.backgroundColor = '#fee2e2';
-        formStatus.style.color = '#7f1d1d';
-        formStatus.style.borderLeft = '4px solid #ef4444';
-        formStatus.innerHTML = '<strong>✗ Error!</strong> There was a problem sending your message. Please try again.';
-        
-        showNotification('Failed to send message', 'error');
-        
-        // Reset button
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
-    });
-});
-
-// =============================================================================
-// Notification System
-// =============================================================================
-function showNotification(message, type = 'info') {
-    // Remove existing notifications
-    const existingNotification = document.querySelector('.notification');
-    if (existingNotification) {
-        existingNotification.remove();
-    }
-    
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.style.cssText = `
-        position: fixed;
-        top: 100px;
-        right: 30px;
-        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 0.75rem;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-        z-index: 10000;
-        animation: slideInRight 0.3s ease;
-        max-width: 300px;
-        font-weight: 500;
-    `;
-    
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    // Auto remove after 3 seconds
-    setTimeout(() => {
-        notification.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
-}
-
-// Add notification animations to document
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideInRight {
-        from {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-    
-    @keyframes slideOutRight {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-    }
-`;
-document.head.appendChild(style);
-
-// =============================================================================
-// Intersection Observer for Animations
-// =============================================================================
-const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -100px 0px'
-};
-
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-        }
-    });
-}, observerOptions);
-
-// Observe elements for animation
-document.addEventListener('DOMContentLoaded', () => {
-    const animatedElements = document.querySelectorAll(
-        '.timeline-item, .skill-category, .project-card, .highlight-item'
-    );
-    
-    animatedElements.forEach(el => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(30px)';
-        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(el);
-    });
-});
-
-// =============================================================================
-// Dynamic Year Update
-// =============================================================================
-document.addEventListener('DOMContentLoaded', () => {
-    const footerYear = document.querySelector('.footer-content p');
-    if (footerYear) {
-        const currentYear = new Date().getFullYear();
-        footerYear.textContent = `© ${currentYear} Vinod Kumar Vemula. All rights reserved.`;
-    }
-});
-
-// =============================================================================
-// Smooth Page Load
-// =============================================================================
-window.addEventListener('load', () => {
-    document.body.style.opacity = '0';
-    document.body.style.transition = 'opacity 0.5s ease';
-    
-    requestAnimationFrame(() => {
-        document.body.style.opacity = '1';
-    });
-});
-
-// =============================================================================
-// Performance Optimization - Debounce Scroll Events
-// =============================================================================
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
+    const profile = {
+        name: "Vinod Kumar Vemula",
+        title: "Senior Software Engineer",
+        focus: "Agentic AI | Recommendation Systems | Python | AWS | Databricks",
+        summary: "Senior Software Engineer with 7 years of Python development experience building production-grade AI, ML, backend, and data systems for finance, insurance, and enterprise AI teams.",
+        location: "McKinney, TX, USA",
+        phone: "+1 (279) 500-3888",
+        phoneHref: "tel:+12795003888",
+        email: "vvinodvemula03@gmail.com",
+        linkedin: "https://www.linkedin.com/in/vinod-kumar-vemula007/",
+        github: "https://github.com/vemula-kv"
     };
-}
 
-// Apply debounce to scroll-heavy functions
-const debouncedScrollHandler = debounce(() => {
-    updateActiveNavLink();
-}, 100);
+    const highlights = [
+        ["7 years", "Python, AI, ML, backend, and data engineering"],
+        ["50%", "Reduction in manual enterprise decision-processing"],
+        ["25%", "False-positive reduction in ML risk scoring"],
+        ["30%", "Faster release cycles through CI/CD automation"]
+    ];
 
-window.addEventListener('scroll', debouncedScrollHandler);
-
-// =============================================================================
-// Console Easter Egg
-// =============================================================================
-console.log(
-    '%c🚀 Vinod Kumar Vemula - Portfolio',
-    'color: #2563eb; font-size: 24px; font-weight: bold;'
-);
-console.log(
-    '%cSenior AI/Data Engineer | GenAI Specialist',
-    'color: #10b981; font-size: 16px;'
-);
-console.log(
-    '%cInterested in collaborating? Let\'s connect!',
-    'color: #6b7280; font-size: 14px;'
-);
-console.log(
-    '%c📧 vvinodvemula03@gmail.com',
-    'color: #2563eb; font-size: 14px;'
-);
-
-// =============================================================================
-// Social Links Analytics (Optional - can be replaced with real analytics)
-// =============================================================================
-const socialLinks = document.querySelectorAll('.social-link, .footer-social a');
-socialLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-        const platform = link.getAttribute('aria-label') || 'Unknown';
-        console.log(`Social link clicked: ${platform}`);
-        // Add your analytics tracking here (e.g., Google Analytics, Mixpanel)
-    });
-});
-
-// =============================================================================
-// Keyboard Navigation Enhancement
-// =============================================================================
-document.addEventListener('keydown', (e) => {
-    // Press 'H' to go to home
-    if (e.key === 'h' || e.key === 'H') {
-        if (!e.target.matches('input, textarea')) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+    const experience = [
+        {
+            role: "Senior Gen AI / Software Engineer",
+            company: "CGI",
+            location: "Dallas, TX",
+            period: "Oct 2025 - Present",
+            bullets: [
+                "Designed production agentic AI systems in Python using LangGraph with stateful multi-agent graphs, tool-calling nodes, memory persistence, and streaming outputs.",
+                "Engineered FastAPI and Pydantic REST APIs with OpenAPI specs, versioning, JWT auth, async endpoints, rate limiting, and zero-downtime deployments.",
+                "Built an MCP server exposing enterprise data and tools as secure standardized agent context endpoints with role-based access control and audit trails.",
+                "Developed RAG pipelines combining vector retrieval, reranking, and LLM reasoning for context-aware next-best-action recommendations.",
+                "Maintained GitHub Actions CI/CD with pytest suites, coverage enforcement, integration tests, and deployment gates."
+            ],
+            tags: ["Python", "LangGraph", "FastAPI", "MCP", "RAG", "GitHub Actions"]
+        },
+        {
+            role: "AI / ML Engineer - Senior Python Developer",
+            company: "BMO Bank",
+            location: "Chicago, IL",
+            period: "Jun 2023 - Sep 2025",
+            bullets: [
+                "Built Python recommendation and risk scoring systems with XGBoost, neural networks, and Azure ML, reducing false positives by 25% and improving decision accuracy by 18%.",
+                "Developed real-time inference REST APIs using FastAPI and Azure OpenAI for personalized AI-generated recommendations.",
+                "Engineered streaming ML inference pipelines for low-latency continuous predictions on live transaction data.",
+                "Built pytest suites and Azure DevOps CI/CD workflows that accelerated releases by 30% and reduced production errors by 20%.",
+                "Performed Spark-based feature engineering on Azure Synapse, transferable to Databricks lakehouse and Delta Lake workflows."
+            ],
+            tags: ["FastAPI", "Azure ML", "Azure OpenAI", "XGBoost", "MLflow", "Spark"]
+        },
+        {
+            role: "Data & AI Systems Engineer",
+            company: "Infosys",
+            location: "Mysore, India",
+            period: "Mar 2019 - Dec 2021",
+            bullets: [
+                "Built real-time Python pipelines on GCP Pub/Sub, BigQuery, and Dataflow, handling 500K+ daily transactions with sub-second latency.",
+                "Developed NLP text classification and sentiment analysis services using open-source Python libraries deployed as REST microservices.",
+                "Integrated CI/CD automation through Jenkins and GitHub to reduce release errors by 15%.",
+                "Managed Git repositories, branching strategies, code reviews, and automated testing gates across an 8-engineer team."
+            ],
+            tags: ["Python", "GCP", "BigQuery", "Dataflow", "NLP", "Jenkins"]
+        },
+        {
+            role: "Data Engineer",
+            company: "Aviva Life Insurance",
+            location: "Bengaluru, India",
+            period: "Jan 2018 - Feb 2019",
+            bullets: [
+                "Built backend Python pipelines for real-time insurance transaction processing on AWS S3 and Glue ETL.",
+                "Improved throughput latency by 30% through optimized event-driven workflow design.",
+                "Engineered risk-based ML features for fraud detection and underwriting recommendation models."
+            ],
+            tags: ["Python", "AWS S3", "Glue ETL", "Insurance", "ML Features"]
         }
-    }
-    
-    // Press 'T' to toggle theme
-    if (e.key === 't' || e.key === 'T') {
-        if (!e.target.matches('input, textarea')) {
-            themeToggle.click();
-        }
-    }
-});
+    ];
 
-// =============================================================================
-// Copy Email to Clipboard
-// =============================================================================
-const emailLinks = document.querySelectorAll('a[href^="mailto:"]');
-emailLinks.forEach(link => {
-    // Add click handler to show copied notification
-    link.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        const email = link.textContent;
-        
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(email).then(() => {
-                showNotification('Email copied to clipboard!', 'success');
+    const skillGroups = [
+        ["Agentic AI", ["LangGraph", "LangChain", "LlamaIndex", "MCP", "RAG", "Prompt Engineering", "Context Engineering"]],
+        ["Recommendation Systems", ["Next-Best-Action Models", "Collaborative Filtering", "Content-Based Filtering", "Embedding Similarity", "Real-Time Scoring APIs", "A/B Testing"]],
+        ["Backend Engineering", ["FastAPI", "Pydantic", "Async Endpoints", "OpenAPI", "JWT Auth", "Rate Limiting", "Integration Testing"]],
+        ["Cloud & Data", ["AWS Lambda", "S3", "Redshift", "Glue", "SageMaker", "Databricks", "Delta Lake", "PySpark", "MLflow"]],
+        ["ML & MLOps", ["Scikit-learn", "XGBoost", "TensorFlow", "PyTorch", "Neural Networks", "Model Monitoring", "Automated Retraining"]],
+        ["CI/CD & DevOps", ["GitHub Actions", "Jenkins", "Azure DevOps", "pytest", "Coverage Gates", "Docker", "Kubernetes", "Terraform"]]
+    ];
+
+    const projects = [
+        {
+            title: "Next-Action Product Recommendation System",
+            period: "Apr 2026",
+            description: "Agentic recommendation engine using LangGraph, customer behavior signals, PGVector similarity search, FastAPI serving, MLflow experiment tracking, pytest coverage, and GitHub Actions CI/CD.",
+            tags: ["LangGraph", "PGVector", "FastAPI", "MLflow"]
+        },
+        {
+            title: "Real-Time ML Decision System",
+            period: "Mar 2023 - May 2023",
+            description: "End-to-end Python ML system covering feature engineering, Scikit-learn/XGBoost training, AWS Lambda and S3 serving, model monitoring, and automated retraining triggers.",
+            tags: ["AWS Lambda", "XGBoost", "S3", "Monitoring"]
+        },
+        {
+            title: "Secure MCP Agent Context Server",
+            period: "2025",
+            description: "Enterprise context service exposing tools and data to AI agents through standardized MCP endpoints with role-based access control and full audit trails.",
+            tags: ["MCP", "RBAC", "Audit Trails", "Agent Tools"]
+        }
+    ];
+
+    function App() {
+        const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
+        const [menuOpen, setMenuOpen] = useState(false);
+
+        useEffect(() => {
+            document.documentElement.setAttribute("data-theme", theme);
+            localStorage.setItem("theme", theme);
+        }, [theme]);
+
+        return h(React.Fragment, null,
+            h(Header, { theme, setTheme, menuOpen, setMenuOpen }),
+            h("main", null,
+                h(Hero),
+                h(About),
+                h(Experience),
+                h(Skills),
+                h(Projects),
+                h(Education),
+                h(Contact)
+            ),
+            h("footer", { className: "footer" },
+                h("div", { className: "container footer-inner" },
+                    h("p", null, "© 2026 Vinod Kumar Vemula"),
+                    h("div", null,
+                        h("a", { href: profile.linkedin, target: "_blank", rel: "noopener noreferrer" }, "LinkedIn"),
+                        h("a", { href: profile.github, target: "_blank", rel: "noopener noreferrer" }, "GitHub"),
+                        h("a", { href: resumeFile, download: true }, "Resume")
+                    )
+                )
+            )
+        );
+    }
+
+    function Header({ theme, setTheme, menuOpen, setMenuOpen }) {
+        const links = [["About", "about"], ["Experience", "experience"], ["Skills", "skills"], ["Projects", "projects"], ["Contact", "contact"]];
+        return h("header", { className: "header" },
+            h("div", { className: "container header-inner" },
+                h("a", { className: "brand", href: "#" }, "VKV"),
+                h("nav", { className: menuOpen ? "nav open" : "nav" },
+                    links.map(([label, id]) => h("a", { key: id, href: `#${id}`, onClick: () => setMenuOpen(false) }, label))
+                ),
+                h("div", { className: "header-actions" },
+                    h("a", { className: "btn btn-dark resume-small", href: resumeFile, download: true }, h(Icon, { name: "fa-download" }), "Resume"),
+                    h("button", { className: "icon-btn", type: "button", onClick: () => setTheme(theme === "dark" ? "light" : "dark"), "aria-label": "Toggle theme" },
+                        h(Icon, { name: theme === "dark" ? "fa-sun" : "fa-moon" })
+                    ),
+                    h("button", { className: "icon-btn menu-btn", type: "button", onClick: () => setMenuOpen(!menuOpen), "aria-label": "Toggle menu" },
+                        h(Icon, { name: menuOpen ? "fa-xmark" : "fa-bars" })
+                    )
+                )
+            )
+        );
+    }
+
+    function Hero() {
+        return h("section", { className: "hero" },
+            h("div", { className: "container hero-grid" },
+                h("div", { className: "hero-content" },
+                    h("p", { className: "eyebrow" }, profile.title),
+                    h("h1", null, profile.name),
+                    h("h2", null, profile.focus),
+                    h("p", { className: "summary" }, profile.summary),
+                    h("div", { className: "hero-actions" },
+                        h("a", { className: "btn btn-primary", href: "#contact" }, h(Icon, { name: "fa-paper-plane" }), "Contact Me"),
+                        h("a", { className: "btn btn-light", href: "#experience" }, h(Icon, { name: "fa-briefcase" }), "View Experience"),
+                        h("a", { className: "btn btn-dark", href: resumeFile, download: true }, h(Icon, { name: "fa-download" }), "Download Resume")
+                    )
+                ),
+                h("aside", { className: "profile-card" },
+                    h("img", { src: "vinod.jpeg", alt: profile.name }),
+                    h("div", { className: "profile-details" },
+                        h("h3", null, "Profile"),
+                        h("p", null, profile.location),
+                        h("p", null, "Finance, insurance, enterprise AI"),
+                        h("p", null, "Available for software engineering and AI platform roles")
+                    ),
+                    h("div", { className: "social-links" },
+                        h("a", { href: profile.phoneHref, "aria-label": "Phone" }, h(Icon, { name: "fa-phone" })),
+                        h("a", { href: `mailto:${profile.email}`, "aria-label": "Email" }, h(Icon, { name: "fa-envelope" })),
+                        h("a", { href: profile.linkedin, target: "_blank", rel: "noopener noreferrer", "aria-label": "LinkedIn" }, h("i", { className: "fab fa-linkedin" })),
+                        h("a", { href: profile.github, target: "_blank", rel: "noopener noreferrer", "aria-label": "GitHub" }, h("i", { className: "fab fa-github" }))
+                    )
+                )
+            )
+        );
+    }
+
+    function About() {
+        return h("section", { id: "about", className: "section" },
+            h("div", { className: "container" },
+                h("div", { className: "metrics" }, highlights.map(([value, label]) =>
+                    h("article", { key: value }, h("strong", null, value), h("span", null, label))
+                )),
+                h("div", { className: "about-box" },
+                    h(SectionTitle, { label: "Professional Summary", title: "Production-focused AI and backend software engineer" }),
+                    h("p", null, "I specialize in agentic AI architecture, REST API engineering, recommendation model development, and backend system design. My work emphasizes reliable delivery: CI/CD, unit testing, Git workflows, secure APIs, and maintainable production systems."),
+                    h("p", null, "I have hands-on AWS experience across Lambda, S3, Redshift, Glue, SageMaker, CloudFormation, IAM, and EventBridge, plus strong working knowledge of Databricks-style lakehouse architecture, PySpark, Delta Lake, MLflow, feature stores, and large-scale feature engineering.")
+                )
+            )
+        );
+    }
+
+    function Experience() {
+        return h("section", { id: "experience", className: "section section-alt" },
+            h("div", { className: "container" },
+                h(SectionTitle, { label: "Experience", title: "Professional experience" }),
+                h("div", { className: "timeline" },
+                    experience.map(job => h("article", { className: "job", key: `${job.company}-${job.period}` },
+                        h("div", { className: "job-meta" },
+                            h("span", null, job.period),
+                            h("strong", null, job.company),
+                            h("small", null, job.location)
+                        ),
+                        h("div", { className: "job-content" },
+                            h("h3", null, job.role),
+                            h("ul", null, job.bullets.map(bullet => h("li", { key: bullet }, bullet))),
+                            h(TagRow, { tags: job.tags })
+                        )
+                    ))
+                )
+            )
+        );
+    }
+
+    function Skills() {
+        return h("section", { id: "skills", className: "section" },
+            h("div", { className: "container" },
+                h(SectionTitle, { label: "Skills", title: "Technical skills" }),
+                h("div", { className: "skills-grid" },
+                    skillGroups.map(([group, skills]) => h("article", { className: "skill-card", key: group },
+                        h("h3", null, group),
+                        h(TagRow, { tags: skills })
+                    ))
+                )
+            )
+        );
+    }
+
+    function Projects() {
+        return h("section", { id: "projects", className: "section section-alt" },
+            h("div", { className: "container" },
+                h(SectionTitle, { label: "Projects", title: "Selected projects" }),
+                h("div", { className: "project-grid" },
+                    projects.map(project => h("article", { className: "project-card", key: project.title },
+                        h("span", { className: "project-period" }, project.period),
+                        h("h3", null, project.title),
+                        h("p", null, project.description),
+                        h(TagRow, { tags: project.tags })
+                    ))
+                )
+            )
+        );
+    }
+
+    function Education() {
+        return h("section", { id: "education", className: "section" },
+            h("div", { className: "container" },
+                h(SectionTitle, { label: "Education", title: "Education & certifications" }),
+                h("div", { className: "education-grid" },
+                    h("article", null, h("h3", null, "Master of Science - Applied Statistics & Decision Analytics"), h("p", null, "Western Illinois University, USA"), h("span", null, "GPA: 3.60 | Jan 2022 - May 2023")),
+                    h("article", null, h("h3", null, "Bachelor of Engineering - Mechanical Engineering"), h("p", null, "Andhra University, India"), h("span", null, "GPA: 3.00 | Aug 2014 - May 2018"))
+                ),
+                h(TagRow, { tags: ["Certified GenAI Expert", "AWS Data Engineer", "Azure Data Engineer Associate", "AI & Machine Learning on Google Cloud"] })
+            )
+        );
+    }
+
+    function Contact() {
+        const [status, setStatus] = useState("");
+        const [sending, setSending] = useState(false);
+
+        function onSubmit(event) {
+            event.preventDefault();
+            const form = event.currentTarget;
+            setSending(true);
+            setStatus("");
+            fetch("https://formspree.io/f/mwvpdgpv", {
+                method: "POST",
+                body: new FormData(form),
+                headers: { Accept: "application/json" }
+            }).then(response => {
+                if (!response.ok) throw new Error("Form submission failed");
+                form.reset();
+                setStatus("Message sent. I will get back to you soon.");
             }).catch(() => {
-                showNotification('Failed to copy email', 'error');
-            });
-        } else {
-            // Fallback for older browsers
-            const textArea = document.createElement('textarea');
-            textArea.value = email;
-            textArea.style.position = 'fixed';
-            textArea.style.left = '-999999px';
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                showNotification('Email copied to clipboard!', 'success');
-            } catch (err) {
-                showNotification('Failed to copy email', 'error');
-            }
-            document.body.removeChild(textArea);
+                setStatus("Message could not be sent. Please email me directly.");
+            }).finally(() => setSending(false));
         }
-    });
-});
 
-// =============================================================================
-// Preload Critical Resources
-// =============================================================================
-const preloadFonts = () => {
-    const fontLink = document.createElement('link');
-    fontLink.rel = 'preload';
-    fontLink.as = 'font';
-    fontLink.type = 'font/woff2';
-    fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap';
-    fontLink.crossOrigin = 'anonymous';
-    document.head.appendChild(fontLink);
-};
+        return h("section", { id: "contact", className: "section section-alt" },
+            h("div", { className: "container contact-grid" },
+                h("div", null,
+                    h(SectionTitle, { label: "Contact", title: "Let’s connect" }),
+                    h("div", { className: "contact-list" },
+                        h("a", { href: `mailto:${profile.email}` }, h(Icon, { name: "fa-envelope" }), profile.email),
+                        h("a", { href: profile.phoneHref }, h(Icon, { name: "fa-phone" }), profile.phone),
+                        h("a", { href: profile.linkedin, target: "_blank", rel: "noopener noreferrer" }, h("i", { className: "fab fa-linkedin" }), "LinkedIn"),
+                        h("a", { href: profile.github, target: "_blank", rel: "noopener noreferrer" }, h("i", { className: "fab fa-github" }), "GitHub"),
+                        h("p", null, profile.location)
+                    )
+                ),
+                h("form", { className: "contact-form", onSubmit },
+                    h("label", null, "Name", h("input", { name: "name", required: true, placeholder: "Your name" })),
+                    h("label", null, "Email", h("input", { type: "email", name: "email", required: true, placeholder: "you@example.com" })),
+                    h("label", null, "Subject", h("input", { name: "subject", required: true, placeholder: "Project inquiry" })),
+                    h("label", null, "Message", h("textarea", { name: "message", rows: 5, required: true, placeholder: "Tell me about the work..." })),
+                    h("button", { className: "btn btn-primary", type: "submit", disabled: sending }, h(Icon, { name: sending ? "fa-spinner fa-spin" : "fa-paper-plane" }), sending ? "Sending" : "Send Message"),
+                    status && h("p", { className: "form-status" }, status)
+                )
+            )
+        );
+    }
 
-// Initialize on DOM ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', preloadFonts);
-} else {
-    preloadFonts();
-}
+    function SectionTitle({ label, title }) {
+        return h("div", { className: "section-title" }, h("p", { className: "eyebrow" }, label), h("h2", null, title));
+    }
 
-// =============================================================================
-// Form Validation Enhancement
-// =============================================================================
-const formInputs = contactForm.querySelectorAll('input, textarea');
-formInputs.forEach(input => {
-    input.addEventListener('blur', () => {
-        if (input.validity.valid) {
-            input.style.borderColor = 'var(--secondary-color)';
-        } else {
-            input.style.borderColor = '#ef4444';
-        }
-    });
-    
-    input.addEventListener('focus', () => {
-        input.style.borderColor = 'var(--primary-color)';
-    });
-});
+    function TagRow({ tags }) {
+        return h("div", { className: "tags" }, tags.map(tag => h("span", { key: tag }, tag)));
+    }
 
-// =============================================================================
-// Print Styles Handler
-// =============================================================================
-window.addEventListener('beforeprint', () => {
-    // Expand all collapsed sections for printing
-    document.body.classList.add('printing');
-});
+    function Icon({ name }) {
+        return h("i", { className: `fas ${name}`, "aria-hidden": "true" });
+    }
 
-window.addEventListener('afterprint', () => {
-    document.body.classList.remove('printing');
-});
-
-// =============================================================================
-// Performance Monitoring
-// =============================================================================
-if ('performance' in window) {
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            const perfData = window.performance.timing;
-            const pageLoadTime = perfData.loadEventEnd - perfData.navigationStart;
-            const connectTime = perfData.responseEnd - perfData.requestStart;
-            const renderTime = perfData.domComplete - perfData.domLoading;
-            
-            console.log('📊 Performance Metrics:');
-            console.log(`   Page Load Time: ${pageLoadTime}ms`);
-            console.log(`   Connect Time: ${connectTime}ms`);
-            console.log(`   Render Time: ${renderTime}ms`);
-        }, 0);
-    });
-}
+    ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+})();
